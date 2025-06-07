@@ -42,8 +42,13 @@ func matchLine(line []byte, pattern string) (bool, error) {
 	if pattern == "\\d" {
 		ok, _ = matchDigit(line)
 	} else if pattern[0] == '[' && pattern[len(pattern)-1] == ']' {
-		pattern = pattern[1 : len(pattern)-1]
-		ok, _ = matchLiteralCharacter(line, pattern)
+		if pattern[1] == '^' {
+			pattern = pattern[2 : len(pattern)-1]
+			ok, _ = matchOnlyLiteralCharacter(line, pattern)
+		} else {
+			pattern = pattern[1 : len(pattern)-1]
+			ok, _ = matchLiteralCharacter(line, pattern)
+		}
 	} else {
 		ok, _ = matchLiteralCharacter(line, pattern)
 	}
@@ -53,6 +58,16 @@ func matchLine(line []byte, pattern string) (bool, error) {
 
 func matchLiteralCharacter(line []byte, pattern string) (bool, error) {
 	return bytes.ContainsAny(line, pattern), nil
+}
+
+func matchOnlyLiteralCharacter(line []byte, pattern string) (bool, error) {
+	for _, b := range line {
+		if !bytes.ContainsAny([]byte(pattern), string(b)) {
+			// 패턴에 없는 문자를 찾음
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func matchDigit(line []byte) (bool, error) {
