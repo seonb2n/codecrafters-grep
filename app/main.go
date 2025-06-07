@@ -41,6 +41,9 @@ func matchLine(line []byte, pattern string) (bool, error) {
 
 	if pattern == "\\d" {
 		ok, _ = matchDigit(line)
+	} else if pattern[0] == '[' && pattern[len(pattern)-1] == ']' {
+		pattern = pattern[1 : len(pattern)-1]
+		ok, _ = matchLiteralCharacter(line, pattern)
 	} else {
 		ok, _ = matchLiteralCharacter(line, pattern)
 	}
