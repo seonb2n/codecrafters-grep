@@ -37,23 +37,86 @@ func main() {
 }
 
 func matchLine(line []byte, pattern string) (bool, error) {
-	var ok bool
-
 	if pattern == "\\d" {
-		ok, _ = matchDigit(line)
-	} else if pattern[0] == '[' && pattern[len(pattern)-1] == ']' {
-		if pattern[1] == '^' {
-			pattern = pattern[2 : len(pattern)-1]
-			ok, _ = matchOnlyLiteralCharacter(line, pattern)
+		return matchDigit(line)
+	} else if len(pattern) > 2 && pattern[0] == '[' && pattern[len(pattern)-1] == ']' {
+		if len(pattern) > 3 && pattern[1] == '^' {
+			return matchOnlyLiteralCharacter(line, pattern[2:len(pattern)-1])
 		} else {
-			pattern = pattern[1 : len(pattern)-1]
-			ok, _ = matchLiteralCharacter(line, pattern)
+			return matchLiteralCharacter(line, pattern[1:len(pattern)-1])
 		}
-	} else {
-		ok, _ = matchLiteralCharacter(line, pattern)
+	} else if isSimpleLiteral(pattern) {
+		return matchLiteralCharacter(line, pattern)
+	}
+	return matchPattern(string(line), pattern), nil
+}
+
+// 단순 리터럴 패턴 여부 확인
+func isSimpleLiteral(pattern string) bool {
+	for i := 0; i < len(pattern); i++ {
+		if pattern[i] == '\\' || pattern[i] == '[' {
+			return false
+		}
+	}
+	return true
+}
+
+func matchPattern(text string, pattern string) bool {
+	for i := 0; i < len(text); i++ {
+		if matchHere(text[i:], pattern) {
+			return true
+		}
+	}
+	return false
+}
+
+// 현재 위치에서 패턴 매치 여부 확인
+func matchHere(text string, pattern string) bool {
+	if len(pattern) == 0 {
+		return true
 	}
 
-	return ok, nil
+	if len(text) == 0 {
+		return false
+	}
+
+	// \d  패턴 처리
+	if len(pattern) >= 2 && pattern[0] == '\\' && pattern[1] == 'd' {
+		if isDigit(text[0]) {
+			return matchHere(text[1:], pattern[2:])
+		}
+		return false
+	}
+
+	// \w 패턴 처리
+	if len(pattern) >= 2 && pattern[0] == '\\' && pattern[1] == 'w' {
+		if isWordChar(text[0]) {
+			return matchHere(text[1:], pattern[2:])
+		}
+		return false
+	}
+
+	// .패턴 처리
+	if pattern[0] == '.' {
+		return matchHere(text[1:], pattern[1:])
+	}
+
+	if pattern[0] == text[0] {
+		return matchHere(text[1:], pattern[1:])
+	}
+
+	return false
+}
+
+func isDigit(c byte) bool {
+	return c >= '0' && c <= '9'
+}
+
+func isWordChar(c byte) bool {
+	return (c >= 'a' && c <= 'z') ||
+		(c >= 'A' && c <= 'Z') ||
+		(c >= '0' && c <= '9') ||
+		c == '_'
 }
 
 func matchLiteralCharacter(line []byte, pattern string) (bool, error) {
