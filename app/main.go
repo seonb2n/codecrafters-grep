@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"unicode/utf8"
 )
 
-// Ensures gofmt doesn't remove the "bytes" import above (feel free to remove this!)
 var _ = bytes.ContainsAny
 
 // Usage: echo <input_text> | your_program.sh -E <pattern>
@@ -39,13 +37,21 @@ func main() {
 }
 
 func matchLine(line []byte, pattern string) (bool, error) {
-	if utf8.RuneCountInString(pattern) != 1 {
-		return false, fmt.Errorf("unsupported pattern: %q", pattern)
-	}
-
 	var ok bool
 
-	ok = bytes.ContainsAny(line, pattern)
+	if pattern == "\\d" {
+		ok, _ = matchDigit(line)
+	} else {
+		ok, _ = matchLiteralCharacter(line, pattern)
+	}
 
 	return ok, nil
+}
+
+func matchLiteralCharacter(line []byte, pattern string) (bool, error) {
+	return bytes.ContainsAny(line, pattern), nil
+}
+
+func matchDigit(line []byte) (bool, error) {
+	return bytes.ContainsAny(line, "0123456789"), nil
 }
