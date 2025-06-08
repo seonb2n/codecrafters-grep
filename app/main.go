@@ -45,6 +45,8 @@ func matchLine(line []byte, pattern string) (bool, error) {
 		} else {
 			return matchLiteralCharacter(line, pattern[1:len(pattern)-1])
 		}
+	} else if isStartWithAnchor(pattern) {
+		return matchStartWith(line, pattern)
 	} else if isSimpleLiteral(pattern) {
 		return matchLiteralCharacter(line, pattern)
 	}
@@ -59,6 +61,10 @@ func isSimpleLiteral(pattern string) bool {
 		}
 	}
 	return true
+}
+
+func isStartWithAnchor(pattern string) bool {
+	return pattern[0] == '^'
 }
 
 func matchPattern(text string, pattern string) bool {
@@ -121,6 +127,10 @@ func isWordChar(c byte) bool {
 
 func matchLiteralCharacter(line []byte, pattern string) (bool, error) {
 	return bytes.ContainsAny(line, pattern), nil
+}
+
+func matchStartWith(line []byte, pattern string) (bool, error) {
+	return bytes.HasPrefix(line, []byte(pattern[1:])), nil
 }
 
 func matchOnlyLiteralCharacter(line []byte, pattern string) (bool, error) {
