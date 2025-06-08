@@ -55,10 +55,9 @@ func matchLine(line []byte, pattern string) (bool, error) {
 	return matchPattern(string(line), pattern), nil
 }
 
-// 단순 리터럴 패턴 여부 확인
 func isSimpleLiteral(pattern string) bool {
 	for i := 0; i < len(pattern); i++ {
-		if pattern[i] == '\\' || pattern[i] == '[' {
+		if pattern[i] == '\\' || pattern[i] == '[' || pattern[i] == '+' {
 			return false
 		}
 	}
@@ -82,6 +81,35 @@ func matchPattern(text string, pattern string) bool {
 	return false
 }
 
+func matchPlus(text string, char byte, remainingPattern string) bool {
+	// 최소 1번은 매치되어야 함
+	if len(text) == 0 || !charMatches(text[0], char) {
+		return false
+	}
+
+	// 1번 매치된 후, 가능한 많이 매치 시도
+	i := 1
+	for i < len(text) && charMatches(text[i], char) {
+		i++
+	}
+
+	// 매치된 개수만큼 역순으로 시도 (greedy matching)
+	for j := i; j >= 1; j-- {
+		if matchHere(text[j:], remainingPattern) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func charMatches(textChar, patternChar byte) bool {
+	if patternChar == '.' {
+		return true
+	}
+	return textChar == patternChar
+}
+
 // 현재 위치에서 패턴 매치 여부 확인
 func matchHere(text string, pattern string) bool {
 	if len(pattern) == 0 {
@@ -90,6 +118,11 @@ func matchHere(text string, pattern string) bool {
 
 	if len(text) == 0 {
 		return false
+	}
+
+	// + 패턴 처리 (두 번째 문자가 +인 경우)
+	if len(pattern) >= 2 && pattern[1] == '+' {
+		return matchPlus(text, pattern[0], pattern[2:])
 	}
 
 	// \d  패턴 처리
