@@ -57,7 +57,7 @@ func matchLine(line []byte, pattern string) (bool, error) {
 
 func isSimpleLiteral(pattern string) bool {
 	for i := 0; i < len(pattern); i++ {
-		if pattern[i] == '\\' || pattern[i] == '[' || pattern[i] == '+' {
+		if pattern[i] == '\\' || pattern[i] == '[' || pattern[i] == '+' || pattern[i] == '?' {
 			return false
 		}
 	}
@@ -103,6 +103,18 @@ func matchPlus(text string, char byte, remainingPattern string) bool {
 	return false
 }
 
+func matchQuestion(text string, char byte, remainPattern string) bool {
+	// 0번 매치
+	if matchHere(text, remainPattern) {
+		return true
+	}
+	// 1번 매치
+	if len(text) > 0 && charMatches(text[0], char) {
+		return matchHere(text[1:], remainPattern)
+	}
+	return false
+}
+
 func charMatches(textChar, patternChar byte) bool {
 	if patternChar == '.' {
 		return true
@@ -123,6 +135,11 @@ func matchHere(text string, pattern string) bool {
 	// + 패턴 처리 (두 번째 문자가 +인 경우)
 	if len(pattern) >= 2 && pattern[1] == '+' {
 		return matchPlus(text, pattern[0], pattern[2:])
+	}
+
+	// ? 패턴 처리 (두 번째 문자가 ?인 경우)
+	if len(pattern) >= 2 && pattern[1] == '?' {
+		return matchQuestion(text, pattern[0], pattern[2:])
 	}
 
 	// \d  패턴 처리
