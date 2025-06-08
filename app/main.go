@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 )
 
 var _ = bytes.ContainsAny
@@ -57,7 +58,9 @@ func matchLine(line []byte, pattern string) (bool, error) {
 
 func isSimpleLiteral(pattern string) bool {
 	for i := 0; i < len(pattern); i++ {
-		if pattern[i] == '\\' || pattern[i] == '[' || pattern[i] == '+' || pattern[i] == '?' || pattern[i] == '.' {
+		if pattern[i] == '\\' || pattern[i] == '[' || pattern[i] == '+' ||
+			pattern[i] == '?' || pattern[i] == '.' || pattern[i] == '|' ||
+			pattern[i] == '(' || pattern[i] == ')' {
 			return false
 		}
 	}
@@ -115,6 +118,29 @@ func matchQuestion(text string, char byte, remainPattern string) bool {
 	return false
 }
 
+func matchOrPattern(text string, pattern string) bool {
+	// 첫 번째 괄호의 끝 찾기
+	parenEnd := findMatchingParen(pattern, 0)
+	if parenEnd == -1 {
+		return false
+	}
+
+	orPart := pattern[0 : parenEnd+1]
+	suffix := pattern[parenEnd+1:]
+
+	// OR 대안들 시도
+	innerPattern := orPart[1:parenEnd]
+	alternatives := strings.Split(innerPattern, "|")
+
+	for _, alt := range alternatives {
+		if matchHere(text, alt+suffix) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func charMatches(textChar, patternChar byte) bool {
 	if patternChar == '.' {
 		return true
@@ -130,6 +156,11 @@ func matchHere(text string, pattern string) bool {
 
 	if len(text) == 0 {
 		return false
+	}
+
+	// or 패턴 처리
+	if isOrPattern(pattern) {
+		return matchOrPattern(text, pattern)
 	}
 
 	// + 패턴 처리 (두 번째 문자가 +인 경우)
@@ -168,6 +199,43 @@ func matchHere(text string, pattern string) bool {
 	}
 
 	return false
+}
+
+func findMatchingParen(pattern string, start int) int {
+	if start >= len(pattern) || pattern[start] != '(' {
+		return -1
+	}
+
+	count := 1
+	for i := start + 1; i < len(pattern); i++ {
+		if pattern[i] == '(' {
+			count++
+		} else if pattern[i] == ')' {
+			count--
+			if count == 0 {
+				return i
+			}
+		}
+	}
+	return -1
+}
+
+func isOrPattern(pattern string) bool {
+	if len(pattern) < 5 { // 최소 "(a|b)" 형태
+		return false
+	}
+	if pattern[0] != '(' {
+		return false
+	}
+
+	// 매칭되는 닫는 괄호 찾기
+	parenEnd := findMatchingParen(pattern, 0)
+	if parenEnd == -1 {
+		return false
+	}
+
+	// 첫 번째 괄호 안에 | 가 있는지 확인
+	return strings.Contains(pattern[1:parenEnd], "|")
 }
 
 func isDigit(c byte) bool {
