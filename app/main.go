@@ -57,7 +57,7 @@ func matchLine(line []byte, pattern string) (bool, error) {
 
 func isSimpleLiteral(pattern string) bool {
 	for i := 0; i < len(pattern); i++ {
-		if pattern[i] == '\\' || pattern[i] == '[' || pattern[i] == '+' || pattern[i] == '?' {
+		if pattern[i] == '\\' || pattern[i] == '[' || pattern[i] == '+' || pattern[i] == '?' || pattern[i] == '.' {
 			return false
 		}
 	}
