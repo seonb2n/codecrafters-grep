@@ -47,6 +47,8 @@ func matchLine(line []byte, pattern string) (bool, error) {
 		}
 	} else if isStartWithAnchor(pattern) {
 		return matchStartWith(line, pattern)
+	} else if isEndWithAnchor(pattern) {
+		return matchEndWith(line, pattern)
 	} else if isSimpleLiteral(pattern) {
 		return matchLiteralCharacter(line, pattern)
 	}
@@ -65,6 +67,10 @@ func isSimpleLiteral(pattern string) bool {
 
 func isStartWithAnchor(pattern string) bool {
 	return pattern[0] == '^'
+}
+
+func isEndWithAnchor(pattern string) bool {
+	return pattern[len(pattern)-1] == '$'
 }
 
 func matchPattern(text string, pattern string) bool {
@@ -131,6 +137,10 @@ func matchLiteralCharacter(line []byte, pattern string) (bool, error) {
 
 func matchStartWith(line []byte, pattern string) (bool, error) {
 	return bytes.HasPrefix(line, []byte(pattern[1:])), nil
+}
+
+func matchEndWith(line []byte, pattern string) (bool, error) {
+	return bytes.HasSuffix(line, []byte(pattern[0:len(pattern)-1])), nil
 }
 
 func matchOnlyLiteralCharacter(line []byte, pattern string) (bool, error) {
